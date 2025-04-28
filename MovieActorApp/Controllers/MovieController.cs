@@ -1,53 +1,64 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MovieActorApp.Services;
-using MovieActorApp.Services.DTO;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MovieActorApp.Application.DTO;
+using MovieActorApp.Application.Movies.Commands;
+using MovieActorApp.Application.Movies.Queries;
 
 namespace MovieActorApp.Controllers
 {
     [ApiController]
-    [Route("api/movies")]
-    public class MovieController : ControllerBase
+    [Route("api/[controller]")]
+    public class MoviesController : ControllerBase
     {
-        private readonly IMovieService _movieService;
+        private readonly IMediator _mediator;
 
-        public MovieController(IMovieService movieService)
+        public MoviesController(IMediator mediator)
         {
-            _movieService = movieService;
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateMovie([FromBody] MovieRequest dto)
-        {
-            var createdMovie = await _movieService.CreateMovieAsync(dto);
-            return CreatedAtAction(nameof(GetMovieById), new { id = createdMovie.Id }, createdMovie);
+            _mediator = mediator;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MovieResponse>>> GetAllMovies()
+        public async Task<IActionResult> GetAll()
         {
-            var movies = await _movieService.GetAllMoviesAsync();
-            return Ok(movies);
+            var query = new GetAllMoviesQuery();
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<MovieResponse>> GetMovieById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var movie = await _movieService.GetMovieByIdAsync(id);
-            return Ok(movie);
+            var query = new GetMovieByIdQuery(id);
+            var result = await _mediator.Send(query);
+            return result is null ? NotFound() : Ok(result);
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] MovieRequest request)
+        {
+            var command = new CreateMovieCommand(request);
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateMovie(int id, [FromBody] MovieRequest dto)
+        public async Task<IActionResult> Update(int id, [FromBody] MovieRequest request)
         {
-            var updatedMovie = await _movieService.UpdateMovieAsync(id, dto);
-            return Ok(updatedMovie);
+            var command = new UpdateMovieCommand(id, request);
+            var result = await _mediator.Send(command);
+            return result is null ? NotFound() : Ok(result);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMovie(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            await _movieService.DeleteMovieAsync(id);
-            return Ok("Movie deleted Successfully");
+            var command = new DeleteMovieCommand(id);
+            var success = await _mediator.Send(command);
+            return success ? Ok("Movie deleted successfully") : NotFound("Movie not found");
         }
     }
 }

@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MovieActorApp.Services;
-using MovieActorApp.Services.DTO;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MovieActorApp.Application.DTO;
+using MovieActorApp.Application.Actors.Commands;
+using MovieActorApp.Application.Actors.Queries;
 
 namespace MovieActorApp.Controllers
 {
@@ -8,46 +11,58 @@ namespace MovieActorApp.Controllers
     [Route("api/actors")]
     public class ActorController : ControllerBase
     {
-        private readonly IActorService _actorService;
+        private readonly IMediator _mediator;
 
-        public ActorController(IActorService actorService)
+        public ActorController(IMediator mediator)
         {
-            _actorService = actorService;
+            _mediator = mediator;
         }
 
+        // POST: api/actors
+        [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<IActionResult> CreateActor([FromBody] ActorRequest dto)
+        public async Task<ActionResult<ActorResponse>> CreateActor([FromBody] ActorRequest dto)
         {
-            var createdActor = await _actorService.CreateActorAsync(dto);
+            var command = new CreateActorCommand(dto);
+            var createdActor = await _mediator.Send(command);
             return CreatedAtAction(nameof(GetActorById), new { id = createdActor.Id }, createdActor);
         }
 
+        // GET: api/actors
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ActorResponse>>> GetAllActors()
         {
-            var actors = await _actorService.GetAllActorsAsync();
+            var query = new GetAllActorsQuery();
+            var actors = await _mediator.Send(query);
             return Ok(actors);
         }
 
+        // GET: api/actors/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<ActorResponse>> GetActorById(int id)
         {
-            var actor = await _actorService.GetActorByIdAsync(id);
-            return Ok(actor);
+            var query = new GetActorByIdQuery(id);
+            var actor = await _mediator.Send(query);
+            return actor is null ? NotFound() : Ok(actor);
         }
 
+        // PUT: api/actors/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateActor(int id, [FromBody] ActorRequest dto)
         {
-            var updatedActor = await _actorService.UpdateActorAsync(id, dto);
-            return Ok(updatedActor);
+            var command = new UpdateActorCommand(id, dto);
+            var updatedActor = await _mediator.Send(command);
+            return updatedActor is null ? NotFound() : Ok(updatedActor);
         }
 
+        // DELETE: api/actors/{id}
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteActor(int id)
         {
-            await _actorService.DeleteActorAsync(id);
-            return Ok("Actor deleted successfully");
+            var command = new DeleteActorCommand(id);
+            var success = await _mediator.Send(command);
+            return success ? Ok("Actor deleted successfully") : NotFound("Actor not found");
         }
     }
 }

@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MovieActorApp.Application\MovieActorApp.Application.csproj" />
+    <ProjectReference Include="..\MovieActorApp.Domain\MovieActorApp.Domain.csproj" />
+    <ProjectReference Include="..\MovieActorApp.Infrastructure\MovieActorApp.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
