@@ -14,6 +14,7 @@ using MovieActorApp.Infrastructure.Repositories;
 using MovieActorApp.Infrastructure.Middlewares;
 using System.Reflection;
 using MovieActorApp.Application.Movies.Commands;
+using MovieActorApp.Application.Actors.Commands;
 using MediatR;
 
 
@@ -40,6 +41,8 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(CreateMovieCommandHandler).Assembly));
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(GetAllActorsQueryHandler).Assembly));
 builder.Services.AddControllers();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
